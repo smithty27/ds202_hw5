@@ -1,0 +1,93 @@
+---
+title: "Homework 5"
+author: "Tyler Smith"
+date: "April 6, 2020"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Problem 1
+```{r}
+library(dplyr)
+library(tidyr)
+library(lubridate)
+#Problem 1
+liq <- readr::read_csv("liquor.csv")
+```
+
+# Problem 2
+```{r}
+#Problem 2
+#Remove NA Values
+liq2 <- na.omit(liq)
+
+#Separates into Latitude and Longitude
+liq2 <- liq2 %>%
+  separate(col=`Store Location`,into=c("point","coord"),sep="\\(")
+liq2 <- liq2 %>%
+  separate(col=coord,into=c("Lat","Long"),sep=" ")
+
+#Correctly Format Variables
+liq2$Long <- substr(liq2$Long,1,nchar(liq2$Long)-1)
+liq2 <- liq2 %>%
+  select(-`Invoice/Item Number`,-point) %>%
+  mutate(Lat=as.numeric(Lat),Long=as.numeric(Long))
+
+liq2 <- liq2 %>%
+  mutate(Date=mdy(Date))
+
+#Extract Year, Month and Date from the date variable
+liq2 <- liq2 %>%
+  mutate(Year = year(Date),Month=month(Date),Day=day(Date))
+```
+  
+Above are all the requested data cleanings, eventually recapped in the liq2 dataset. 
+  
+  
+#Problem 3
+```{r}
+library(ggplot2)
+# Problem 3
+#Scatterplot of Lat/Long
+ggplot(data=liq2,aes(y=Long,x=Lat))+geom_point()+labs(y="Latitude",x="Longitude",title="Scatterplot of Latitude and Longitude")
+  
+#geom_text(aes(label=substr(`Store Name`,1,5)))
+
+#Breakdown of Liquor Category
+liq2 %>%
+  ggplot(aes(y=`Volume Sold (Gallons)`))+geom_boxplot()+facet_wrap(~`Category Name`)
+```
+  
+For the plot above to look right, it needed to be put into the console. It does provide the requested breakdown in this manner, with each type of liquor represented and scale by volume is able to be viewed for each. 
+  
+We see that American Vodkas are among the most sold, along with special order items. Candadian whiskies, Bourbourn, Irish Whiskies, Tequila, Rum and Whiskey liqueur are all big sellers, with over 100 gallons sold.
+  
+  
+  
+# Problem 4  
+```{r}
+daily  <- liq2 %>%
+  group_by(Month,Day) %>%
+  summarize(number=n(),volume=sum(`Volume Sold (Gallons)`),money = sum(`Sale (Dollars)`))
+head(daily)
+summary(daily)
+```
+  
+Above is the data set featuring daily liquor sales. We can see the breakdown of each of the variables presented above with the summary function.  
+  
+# Problem 5
+
+```{r}
+daily %>%
+  ggplot(aes(x=Day,y=volume))+geom_point()+geom_smooth(method="lm")+facet_wrap(~Month)
+```
+
+From the plot above, we can see that there is a sharp increase towards the end of August. In general, it appears that when students arrive back on campus, the alcohol sales increase. I don't see a consistent increase or decrease for the other ones with increases. There are two significant decreasaes in May and December, which likely correlates with students leaving for break.  
+  
+# Problem 6  
+You can distinctly see Iowa State home football games on the plot. In the days leading up to August 31, the first home football game, there is a spike. There are similar trends before Sep. 14 and 21 games. The two highest points in October are both football games, as is the peak in November. The game on Nov. 23 appears to be lower than other home football games, potentially due to students being on break. 
